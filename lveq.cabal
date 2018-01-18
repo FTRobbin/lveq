@@ -1,0 +1,20 @@
+name:                lveq
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/FTRobbin/lveq#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Haobin Ni
+maintainer:          haobin@cs.cornell.edu
+copyright:           2018 Haobin Ni
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable lveq
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
