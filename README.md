@@ -1,1 +1,1 @@
-# Leaves Equvalence
+# Leaves Equivalence
