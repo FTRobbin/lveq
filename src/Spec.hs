@@ -2,6 +2,8 @@ module Main where
 
 import Test.HUnit
 import DAG
+import Equivalence
+import Interface
 
 tr1 = TestCase (assertEqual "Transform1" (transform 2 [(1, 2)]) [[], [1]])
 tr2 = TestCase (assertEqual "Transform2" (transform 4 [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]) [[], [1], [1, 2], [1, 2, 3]])

@@ -15,16 +15,21 @@ extra-source-files:  README.md
 
 library
   hs-source-dirs:      src
-  exposed-modules:     DAG
+  exposed-modules:     Equivalence
+  other-modules:       DAG
   default-language:    Haskell2010
-  build-depends:       base
+  build-depends:       base,
+                       symexec
 
 Test-Suite lveq-spec
   hs-source-dirs:      src
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
-  other-modules:     DAG
+  other-modules:       DAG,
+                       Equivalence,
+                       Interface
   default-language:    Haskell2010
   build-depends:       lveq,
+                       symexec,
                        base >= 4.7 && < 5,
                        HUnit

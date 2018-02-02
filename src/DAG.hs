@@ -53,19 +53,11 @@ dagMatch gL gR i oL oR =
             filter succMatch $ map __dagMatch rev
     
 
--- | Interface
+-- | DAG Interface
 dagEqv :: Dag -> Dag -> Bool
 dagEqv gL gR =
     if length gL == length gR then
         not . null $ dagMatch gL gR 0 (toposort gL) []
     else
         False
-
--- leavesEqv :: [Leaf] -> [Leaf] -> Bool
-
--- leafPairEqv :: Leaf -> Leaf -> Bool
-
--- dagEqv :: Dag -> Dag -> (Int -> Int -> Bool) -> Bool
-
--- dagEqv :: Dag -> Dag -> Bool
 
