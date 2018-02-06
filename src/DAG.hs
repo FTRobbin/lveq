@@ -26,7 +26,7 @@ toposort g =  __topo . map (+ 1) . findIndices null $ g
 data MatchTree = LeafM | NodeM Int Int [MatchTree]
 
 -- | Dumb way to build a map out of two lists
-mapI :: [Int] -> [Int] -> Int -> Int
+mapI :: (Eq a) => [a] -> [b] -> a -> b 
 mapI la lb a = 
     case (findIndex (== a) la) of
         Just i -> lb !! i
@@ -38,8 +38,8 @@ succMatch (LeafM) = True
 succMatch (NodeM _ _ l) = or $ map succMatch l
 
 -- | Main matching procedure
-dagMatch :: Dag -> Dag -> Int -> [Int] -> [Int] -> [MatchTree]
-dagMatch gL gR i oL oR =
+dagMatch :: Dag -> Dag -> (Int -> Int -> Bool) -> Int -> [Int] -> [Int] -> [MatchTree]
+dagMatch gL gR f i oL oR =
     if i == length oL then
         [LeafM]
     else
@@ -47,17 +47,20 @@ dagMatch gL gR i oL oR =
             u = oL !! i
             -- Oh no this did not consider the order of the list!
             -- But they are pre-sorted
-            rev = map (+ 1) $ findIndices (== (sort (map (mapI (take i oL) oR) (gL !! (u - 1))))) $ gR
-            __dagMatch v = NodeM u v (dagMatch gL gR (i + 1) oL (oR ++ [v]))
+            rev = filter (f u) $ map (+ 1) $ findIndices (== (sort (map (mapI (take i oL) oR) (gL !! (u - 1))))) $ gR
+            __dagMatch v = NodeM u v (dagMatch gL gR f (i + 1) oL (oR ++ [v]))
         in
             filter succMatch $ map __dagMatch rev
     
 
 -- | DAG Interface
 dagEqv :: Dag -> Dag -> Bool
-dagEqv gL gR =
+dagEqv gL gR = dagFEqv gL gR (\x y -> True)
+
+dagFEqv :: Dag -> Dag -> (Int -> Int -> Bool) -> Bool
+dagFEqv gL gR f =
     if length gL == length gR then
-        not . null $ dagMatch gL gR 0 (toposort gL) []
+        not . null $ dagMatch gL gR f 0 (toposort gL) []
     else
         False
 
