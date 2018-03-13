@@ -1,7 +1,10 @@
 module Interface where
 
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.List
+
+import Data.SBV
 
 import qualified Prot.Lang.Expr as PExpr
 import qualified Prot.Lang.Analyze as PAnalyze
@@ -21,6 +24,53 @@ leavesEqv = fail "not implemented"
 leafPairEqv :: PAnalyze.Leaf ret -> PAnalyze.Leaf ret -> Bool
 leafPairEqv l r = dagFEqv (extractDag l) (extractDag r) (sampEqvF (extr l) (extr r))
     where extr = PAnalyze._leafSamps
+
+data MatchTreeWithSamp = NodeMS PAnalyze.Sampling PAnalyze.Sampling [MatchTreeWithSamp]
+
+isLeaf :: MatchTree -> Bool 
+isLeaf (LeafM) = true
+isLeaf _ = false
+
+attachSamp :: [PAnalyze.Sampling] -> [PAnalyze.Sampling] -> MatchTree -> MatchTreeWithSamp
+attachSamp _ _ (LeafM) = error "LeafNode"
+attachSamp ls rs (NodeM l r ch) = NodeMS (ls !! l) (rs !! r) (map (attachSamp ls rs) $ filter (not. isLeaf) ch)
+
+onlyOne :: [SBool] -> SBool
+onlyOne bs = (bOr bs) &&& bAnd (map (\b -> b ==> bnot (bOr (delete b bs))) bs)
+
+isInjective :: (Map.Map (String, String) SBool) -> SBool
+isInjective m = 
+    let rows = nub $ map (\(a, _) -> a) $ Map.keys m
+        extract m x = Map.elems $ Map.filterWithKey (\(a, _) _ -> a == x) m in
+        bAnd (map onlyOne (map (extract m) rows))
+
+isSurjective :: (Map.Map (String, String) SBool) -> SBool
+isSurjective m =
+    let cols = nub $ map (\(_, a) -> a) $ Map.keys m
+        extract m x = Map.elems $ Map.filterWithKey (\(_, a) _ -> a == x) m in
+        bAnd (map onlyOne (map (extract m) cols))
+
+isBijective :: (Map.Map (String, String) SBool) -> SBool
+isBijective m = (isInjective m) &&& (isSurjective m)
+
+data VarTree = NodeVT SBool SBool [VarTree]
+
+buildVarTree :: MatchTreeWithSamp -> (Map.Map (String, String) SBool) -> Symbolic VarTree
+buildVarTree (NodeMS l r ch) m = 
+    let (Just var) = (Map.lookup (PAnalyze._sampname l, PAnalyze._sampname r)) m in
+    (NodeVT var) <$> (free_) <*> (sequence ((map (`buildVarTree` m) ch)))
+
+tConstrain :: [VarTree] -> SBool
+tConstrain ts = 
+    let extract (NodeVT _ var _) = var
+        constrain fa [] = true
+        constrain fa ch = fa ==> (bOr (map extract ch))
+        tConstrain' (NodeVT mvar var ch) = (var ==> mvar) &&& (foldr (&&&) (constrain var ch) (map tConstrain' ch)) in
+    foldr (&&&) (constrain true ts) (map tConstrain' ts)
+
+matchValid :: [MatchTreeWithSamp] -> (Map.Map (String, String) SBool) -> Symbolic SBool
+matchValid t m = fmap ((&&&) (isBijective m)) (constrain t m)
+    where constrain t m = tConstrain <$> (sequence (map (`buildVarTree` m) t))
 
 -- | Type transformations
 

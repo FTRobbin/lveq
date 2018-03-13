@@ -34,4 +34,5 @@ Test-Suite lveq-spec
                        symexec,
                        base >= 4.7 && < 5,
                        containers,
-                       HUnit
+                       HUnit,
+                       sbv
